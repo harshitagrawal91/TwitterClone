@@ -39,7 +39,7 @@ defmodule TwitterClone.Main do
       System.system_time(:millisecond) - start_time
     } milliseconds"
 
-    simulate_disconnection(users_count, disconnected_clients)
+    handle_discnneted_usrs(users_count, disconnected_clients)
     receive do: (_ -> :ok)
   end
 
@@ -103,61 +103,76 @@ defmodule TwitterClone.Main do
     end
   end
 
-  def register_users(count, noOfClients, tweets) do
+  def register_users(count, user_count, tweets) do
     userName = Integer.to_string(count)
-    #    noOfTweets = round(Float.floor(totalSubscribers / count))
-    totalSubscribers = tweets * count
-    IO.inspect(tweets)
-    IO.inspect(tweets)
-    IO.inspect(count)
-    noToSubscribe = round(Float.floor(totalSubscribers / (noOfClients - count + 1))) - 1
-    pid = spawn(fn -> TwitterClone.Client.start_link(userName, tweets, noToSubscribe, false) end)
+    subscrbr_count = tweets * count
+    subscrptn_number = ((subscrbr_count / (user_count - count + 1))
+                        |> Float.floor
+                        |> round) - 1
+    pid = spawn(fn -> TwitterClone.Client.start_link(userName, tweets, subscrptn_number, false) end)
     :ets.insert(:start_up_reg, {userName, pid})
-    if (count != noOfClients) do
-      register_users(count + 1, noOfClients, tweets) end
-  end
-
-  def whereis(userId) do
-    [tup] = :ets.lookup(:start_up_reg, userId)
-    elem(tup, 1)
-  end
-
-  def simulate_disconnection(users_count, disconnected_clients) do
-    Process.sleep(1000)
-    disconnectList = handle_disconnection(users_count, disconnected_clients, 0, [])
-    Process.sleep(1000)
-    Enum.each disconnectList, fn userName ->
-      pid = spawn(fn -> TwitterClone.Client.start_link(userName, -1, -1, true) end)
-      :ets.insert(:start_up_reg, {userName, pid})
+    if (count != user_count) do
+      register_users(
+        count + 1,
+        user_count,
+        tweets
+      )
     end
-    simulate_disconnection(users_count, disconnected_clients)
   end
 
-  def handle_disconnection(users_count, disconnected_clients, clientsDisconnected, disconnectList) do
-    if clientsDisconnected < disconnected_clients do
-      disconnectClient = :rand.uniform(users_count)
-      disconnectClientId = whereis(Integer.to_string(disconnectClient))
-      if disconnectClientId != nil do
-        userId = Integer.to_string(disconnectClient)
-        disconnectList = [userId | disconnectList]
-        # send(:global.whereis_name(:TwitterServer),{:disconnectUser,userId})
-        GenServer.cast(:global.whereis_name(:TwitterServer), {:disconnectUser, userId})
-        :ets.insert(:start_up_reg, {userId, nil})
-        Process.exit(disconnectClientId, :kill)
-        IO.puts "Simulator :- User #{userId} has been disconnected"
-        handle_disconnection(users_count, disconnected_clients, clientsDisconnected + 1, disconnectList)
+  def query_to_storage(user_id) do
+    [row] = :ets.lookup(:start_up_reg, user_id)
+    elem(row, 1)
+  end
+
+  def handle_discnneted_usrs(
+        users_count,
+        disconnected_clients
+      ) do
+    Process.sleep(1000)
+    discnneted_lst = process_discnnection(users_count, disconnected_clients, 0, [])
+    Process.sleep(1000)
+    Enum.each discnneted_lst,
+              fn userName ->
+                pid = spawn(
+                  fn -> TwitterClone.Client.start_link(userName, -1, -1, true)
+                  end
+                )
+                :ets.insert(:start_up_reg, {userName, pid})
+              end
+    handle_discnneted_usrs(users_count, disconnected_clients)
+  end
+
+  def process_discnnection(
+        users_count,
+        disconnected_clients,
+        users_discnected,
+        discnected_set
+      ) do
+    if users_discnected < disconnected_clients do
+      disconnctd_usr = :rand.uniform(users_count)
+      disconnctd_usr_id = disconnctd_usr
+                          |> Integer.to_string
+                          |> query_to_storage
+      if disconnctd_usr_id != nil do
+        usr_id = disconnctd_usr
+                 |> Integer.to_string
+        discnected_set = [usr_id | discnected_set]
+        GenServer.cast(:global.whereis_name(:TwitterServer), {:disconnectUser, usr_id})
+        :ets.insert(:start_up_reg, {usr_id, nil})
+        Process.exit(disconnctd_usr_id, :kill)
+        IO.puts "Process disconnection :- Client #{usr_id} lost connection"
+        process_discnnection(
+          users_count,
+          disconnected_clients,
+          users_discnected + 1,
+          discnected_set
+        )
       else
-        handle_disconnection(users_count, disconnected_clients, clientsDisconnected, disconnectList)
+        process_discnnection(users_count, disconnected_clients, users_discnected, discnected_set)
       end
     else
-      disconnectList
+      discnected_set
     end
-  end
-
-  def randomizer(l) do
-    :crypto.strong_rand_bytes(l)
-    |> Base.url_encode64
-    |> binary_part(0, l)
-    |> String.downcase
   end
 end

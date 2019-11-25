@@ -6,7 +6,7 @@ defmodule TwitterClone.Server do
         GenServer.start_link(__MODULE__, :ok)
     end
 
-    def whereis(userId) do
+    def query_to_storage(userId) do
         if :ets.lookup(:clientsregistry, userId) == [] do
             nil
         else
@@ -103,12 +103,12 @@ defmodule TwitterClone.Server do
         Enum.each mentionsList, fn mention ->
 	        insert_tags(mention,tweetString)
             userName = String.slice(mention,1, String.length(mention)-1)
-            if whereis(userName) != nil, do: send(whereis(userName),{:live,tweetString})
+            if query_to_storage(userName) != nil, do: send(query_to_storage(userName),{:live,tweetString})
         end
 
         [{_,followersList}] = :ets.lookup(:followers, userId)
         Enum.each followersList, fn follower ->
-	        if whereis(follower) != nil, do: send(whereis(follower),{:live,tweetString})
+	        if query_to_storage(follower) != nil, do: send(query_to_storage(follower),{:live,tweetString})
         end
         # IO.puts "User #{userId} :-#{tweetString} "
         {:noreply, state}
@@ -117,7 +117,7 @@ defmodule TwitterClone.Server do
     def  handle_cast({:tweetsSubscribedTo, userId}, state) do
         subscribedTo = get_subscribed_to(userId)
         list = generate_tweet_list(subscribedTo,[])
-        send(whereis(userId),{:repTweetsSubscribedTo,list})
+        send(query_to_storage(userId),{:repTweetsSubscribedTo,list})
         #  IO.puts "User #{userId} :-subscribed "
         {:noreply, state}
     end
@@ -128,7 +128,7 @@ defmodule TwitterClone.Server do
             [{"#",[]}]
         end
         list = elem(tup, 1)
-        send(whereis(userId),{:repTweetsWithHashtag,list})
+        send(query_to_storage(userId),{:repTweetsWithHashtag,list})
         {:noreply, state}
     end
     def  handle_cast({:tweetsWithMention, userId}, state) do
@@ -138,13 +138,13 @@ defmodule TwitterClone.Server do
             [{"#",[]}]
         end
         list = elem(tup, 1)
-        send(whereis(userId),{:repTweetsWithMention,list})
+        send(query_to_storage(userId),{:repTweetsWithMention,list})
         {:noreply, state}
     end
     def  handle_cast({:getMyTweets, userId}, state) do
         [tup] = :ets.lookup(:tweets, userId)
         list = elem(tup, 1)
-        send(whereis(userId),{:repGetMyTweets,list})
+        send(query_to_storage(userId),{:repGetMyTweets,list})
         {:noreply, state}
     end
     def  handle_cast({:disconnectUser, userId}, state) do
@@ -179,7 +179,7 @@ defmodule TwitterClone.Server do
     # def get_my_tweets(userId) do
     #     [tup] = :ets.lookup(:tweets, userId)
     #     list = elem(tup, 1)
-    #     send(whereis(userId),{:repGetMyTweets,list})
+    #     send(query_to_storage(userId),{:repGetMyTweets,list})
     # end
 
     def get_subscribed_to(userId) do
@@ -221,12 +221,12 @@ defmodule TwitterClone.Server do
     #     Enum.each mentionsList, fn mention ->
 	#         insert_tags(mention,tweetString)
     #         userName = String.slice(mention,1, String.length(mention)-1)
-    #         if whereis(userName) != nil, do: send(whereis(userName),{:live,tweetString})
+    #         if query_to_storage(userName) != nil, do: send(query_to_storage(userName),{:live,tweetString})
     #     end
 
     #     [{_,followersList}] = :ets.lookup(:followers, userId)
     #     Enum.each followersList, fn follower ->
-	#         if whereis(follower) != nil, do: send(whereis(follower),{:live,tweetString})
+	#         if query_to_storage(follower) != nil, do: send(query_to_storage(follower),{:live,tweetString})
     #     end
     # end
 
@@ -247,13 +247,13 @@ defmodule TwitterClone.Server do
     # def  handle_cast({:tweetsSubscribedTo, userId}, state) do
     #     subscribedTo = get_subscribed_to(userId)
     #     list = generate_tweet_list(subscribedTo,[])
-    #     send(whereis(userId),{:repTweetsSubscribedTo,list})
+    #     send(query_to_storage(userId),{:repTweetsSubscribedTo,list})
     #     {:noreply, state}
     # end
     # def tweets_subscribed_to(userId) do
     #     subscribedTo = get_subscribed_to(userId)
     #     list = generate_tweet_list(subscribedTo,[])
-    #     send(whereis(userId),{:repTweetsSubscribedTo,list})
+    #     send(query_to_storage(userId),{:repTweetsSubscribedTo,list})
     # end
 
     def generate_tweet_list([head | tail],tweetlist) do
@@ -270,7 +270,7 @@ defmodule TwitterClone.Server do
     #         [{"#",[]}]
     #     end
     #     list = elem(tup, 1)
-    #     send(whereis(userId),{:repTweetsWithHashtag,list})
+    #     send(query_to_storage(userId),{:repTweetsWithHashtag,list})
     # end
 
     # def tweets_with_mention(userId) do
@@ -280,6 +280,6 @@ defmodule TwitterClone.Server do
     #         [{"#",[]}]
     #     end
     #     list = elem(tup, 1)
-    #     send(whereis(userId),{:repTweetsWithMention,list})
+    #     send(query_to_storage(userId),{:repTweetsWithMention,list})
     # end
 end
