@@ -54,32 +54,6 @@ defmodule TwitterClone.Server do
         {:ok, nil}
     end
 
-    # def api_handler() do
-    #     receive do
-    #         # {:registerUser,userId,pid} -> register_user(userId,pid)
-    #                                     #   send(pid,{:registerConfirmation})
-    #         # {:tweet,tweetString,userId} -> process_tweet(tweetString,userId)
-    #         # {:tweetsSubscribedTo,userId} -> Task.start fn -> tweets_subscribed_to(userId) end
-    #         # {:tweetsWithHashtag,hashTag,userId} -> Task.start fn -> tweets_with_hashtag(hashTag,userId) end
-    #         # {:tweetsWithMention,userId} -> Task.start fn -> tweets_with_mention(userId) end
-    #         # {:getMyTweets,userId} -> Task.start fn -> get_my_tweets(userId) end
-    #         # {:addSubscriber,userId,subId} -> add_subscribed_to(userId,subId)
-    #                                         #  add_followers(subId,userId)
-    #         # {:disconnectUser,userId} -> disconnect_user(userId)
-    #         # {:loginUser,userId,pid} -> :ets.insert(:clientsregistry, {userId, pid})
-    #     end
-    #     api_handler()
-    # end
-
-    # def register_user(userId,pid) do
-    #     :ets.insert(:clientsregistry, {userId, pid})
-    #     :ets.insert(:tweets, {userId, []})
-    #     :ets.insert(:subscribedto, {userId, []})
-    #     if :ets.lookup(:followers, userId) == [], do: :ets.insert(:followers, {userId, []})
-    # end
-    # def handle_cast({:register_account, userId,_pid}, state) do
-    #     {:noreply, state}
-    #   end
     def  handle_cast({:register_account, userId,pid}, state) do
         :ets.insert(:clientsregistry, {userId, pid})
         :ets.insert(:tweets, {userId, []})
@@ -207,28 +181,6 @@ defmodule TwitterClone.Server do
         :ets.insert(:followers, {userId, list})
     end
 
-    # def process_tweet(tweetString,userId) do
-    #     [tup] = :ets.lookup(:tweets, userId)
-    #     list = elem(tup,1)
-    #     list = [tweetString | list]
-    #     :ets.insert(:tweets,{userId,list})
-
-    #     hashtagsList = Regex.scan(~r/\B#[a-zA-Z0-9_]+/, tweetString) |> Enum.concat
-    #     Enum.each hashtagsList, fn hashtag ->
-	#         insert_tags(hashtag,tweetString)
-    #     end
-    #     mentionsList = Regex.scan(~r/\B@[a-zA-Z0-9_]+/, tweetString) |> Enum.concat
-    #     Enum.each mentionsList, fn mention ->
-	#         insert_tags(mention,tweetString)
-    #         userName = String.slice(mention,1, String.length(mention)-1)
-    #         if query_to_storage(userName) != nil, do: send(query_to_storage(userName),{:live,tweetString})
-    #     end
-
-    #     [{_,followersList}] = :ets.lookup(:followers, userId)
-    #     Enum.each followersList, fn follower ->
-	#         if query_to_storage(follower) != nil, do: send(query_to_storage(follower),{:live,tweetString})
-    #     end
-    # end
 
     def insert_tags(tag,tweetString) do
         [tup] = if :ets.lookup(:hashtags_mentions, tag) != [] do
@@ -244,17 +196,7 @@ defmodule TwitterClone.Server do
             :ets.insert(:hashtags_mentions,{tag,list})
         end
     end
-    # def  handle_cast({:tweetsSubscribedTo, userId}, state) do
-    #     subscribedTo = get_subscribed_to(userId)
-    #     list = generate_tweet_list(subscribedTo,[])
-    #     send(query_to_storage(userId),{:repTweetsSubscribedTo,list})
-    #     {:noreply, state}
-    # end
-    # def tweets_subscribed_to(userId) do
-    #     subscribedTo = get_subscribed_to(userId)
-    #     list = generate_tweet_list(subscribedTo,[])
-    #     send(query_to_storage(userId),{:repTweetsSubscribedTo,list})
-    # end
+
 
     def generate_tweet_list([head | tail],tweetlist) do
         tweetlist = get_tweets(head) ++ tweetlist
@@ -262,24 +204,4 @@ defmodule TwitterClone.Server do
     end
 
     def generate_tweet_list([],tweetlist), do: tweetlist
-
-    # def tweets_with_hashtag(hashTag, userId) do
-    #     [tup] = if :ets.lookup(:hashtags_mentions, hashTag) != [] do
-    #         :ets.lookup(:hashtags_mentions, hashTag)
-    #     else
-    #         [{"#",[]}]
-    #     end
-    #     list = elem(tup, 1)
-    #     send(query_to_storage(userId),{:repTweetsWithHashtag,list})
-    # end
-
-    # def tweets_with_mention(userId) do
-    #     [tup] = if :ets.lookup(:hashtags_mentions, "@" <> userId) != [] do
-    #         :ets.lookup(:hashtags_mentions, "@" <> userId)
-    #     else
-    #         [{"#",[]}]
-    #     end
-    #     list = elem(tup, 1)
-    #     send(query_to_storage(userId),{:repTweetsWithMention,list})
-    # end
 end

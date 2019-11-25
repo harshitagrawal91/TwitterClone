@@ -1,4 +1,5 @@
 defmodule TwitterClone.Main do
+
   def main(args) do
     params = parse_args(args)
     if(params == "start_server") do
@@ -104,13 +105,14 @@ defmodule TwitterClone.Main do
   end
 
   def register_users(count, user_count, tweets) do
-    userName = Integer.to_string(count)
+    user_name = Integer.to_string(count)
     subscrbr_count = tweets * count
     subscrptn_number = ((subscrbr_count / (user_count - count + 1))
                         |> Float.floor
                         |> round) - 1
-    pid = spawn(fn -> TwitterClone.Client.start_link(userName, tweets, subscrptn_number, false) end)
-    :ets.insert(:start_up_reg, {userName, pid})
+    pid = spawn(fn -> TwitterClone.Client.start_link(user_name, tweets, subscrptn_number, false) end)
+    :ets.insert(:start_up_reg, {user_name, pid})
+
     if (count != user_count) do
       register_users(
         count + 1,
@@ -118,6 +120,7 @@ defmodule TwitterClone.Main do
         tweets
       )
     end
+    {user_name, pid}
   end
 
   def query_to_storage(user_id) do
