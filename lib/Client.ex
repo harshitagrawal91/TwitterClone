@@ -108,7 +108,7 @@ defmodule TwitterClone.Client do
         queries_myTweets_time_diff = System.system_time(:millisecond) - start_time
 
         tweets_time_diff = tweets_time_diff/(noOfTweets+3)
-        send(:global.whereis_name(:mainproc),{:perfmetrics,tweets_time_diff,queries_subscribedto_time_diff,queries_hashtag_time_diff,queries_mention_time_diff,queries_myTweets_time_diff})
+        send(:global.whereis_name(:start_up_process),{:performance_metric,tweets_time_diff,queries_subscribedto_time_diff,queries_hashtag_time_diff,queries_mention_time_diff,queries_myTweets_time_diff})
 
         #Live View
         handle_liveView(userId)
