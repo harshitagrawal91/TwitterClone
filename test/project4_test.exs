@@ -21,38 +21,40 @@ defmodule Project4Test do
     assert(user_id2 == elem(tup, 0))
   end
   test "Disconnect User" do
-    user_id=5
+    user_id=10
+    {noreply,state} =  TwitterClone.Server.handle_cast({:register_account, user_id, self()},10)
     {noreply,state} =  TwitterClone.Server.handle_cast({:disconnectUser, user_id},10)
     [tup] = :ets.lookup(:clientsregistry, user_id)
             assert(nil == elem(tup, 1))
   end
   test "Delete User" do
-    user_id=5
+    user_id=11
+    {noreply,state} =  TwitterClone.Server.handle_cast({:register_account, user_id, self()},10)
     {noreply,state} =  TwitterClone.Server.handle_cast({:deleteUser, user_id},10)
     assert(:ets.lookup(:clientsregistry, user_id)==[])
 
   end
   test "Login User" do
-    user_id=5
+    user_id=12
+    {noreply,state} =  TwitterClone.Server.handle_cast({:register_account, user_id, self()},10)
     {noreply,state} =  TwitterClone.Server.handle_cast({:loginUser, user_id,self()},10)
     [tup] = :ets.lookup(:clientsregistry, user_id)
             assert(self() == elem(tup, 1))
 
   end
   test "addSubscriber User" do
-    user_id=5
-    subId=7
-    {noreply,state} =  TwitterClone.Server.handle_cast({:addSubscriber,user_id,subId},10)
-    [tup] = :ets.lookup(:subscribedto,user_id)
-        IO.inspect(elem(tup, 1))
+    user_id=15
+    user_id2=17
+    {noreply,state} =  TwitterClone.Server.handle_cast({:register_account, user_id, self()},10)
+    {noreply,state} =  TwitterClone.Server.handle_cast({:register_account, user_id2, self()},10)
 
+     TwitterClone.Server.handle_cast({:addSubscriber, user_id, Integer.to_string(user_id2)},10)
+    [tup] = :ets.lookup(:subscribedto, user_id)
+    assert(["17"] == elem(tup, 1))
+    [tup] = :ets.lookup(:followers,  Integer.to_string(user_id2))
+    IO.inspect(elem(tup, 1))
+    assert([15] == elem(tup, 1))
   end
 
-  # test "Register User" do
-  #   :ets.new(:start_up_reg, [:set, :public, :named_table])
-  #   {userName, pid} = TwitterClone.Main.register_users(1, 10, 10)
-  #   [row] = :ets.lookup(:start_up_reg, userName)
-  #   {user_id, _} = row
-  #   assert userName == user_id
-  # end
+  
 end
