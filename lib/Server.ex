@@ -36,21 +36,21 @@ defmodule TwitterClone.Server do
             end
         end
     end
-
-    def init(:ok) do
-        {:ok,iflist}=:inet.getif()
-        make_distributed(Enum.reverse(iflist),length(iflist))
+    def init_ets() do
         :ets.new(:clientsregistry, [:set, :public, :named_table])
         :ets.new(:tweets, [:set, :public, :named_table])
         :ets.new(:hashtags_mentions, [:set, :public, :named_table])
         :ets.new(:subscribedto, [:set, :public, :named_table])
         :ets.new(:followers, [:set, :public, :named_table])
-        # server_id = spawn_link(fn() -> api_handler() end)
 
+    end
+    def init(:ok) do
+        {:ok,iflist}=:inet.getif()
+        make_distributed(Enum.reverse(iflist),length(iflist))
+        init_ets()
         :global.register_name(:TwitterServer,self())
         IO.inspect(:global.whereis_name(:TwitterServer))
         IO.puts "Server Started"
-        # receive do: (_ -> :ok)
         {:ok, nil}
     end
 
@@ -59,8 +59,6 @@ defmodule TwitterClone.Server do
         :ets.insert(:tweets, {userId, []})
         :ets.insert(:subscribedto, {userId, []})
         if :ets.lookup(:followers, userId) == [], do: :ets.insert(:followers, {userId, []})
-        # IO.puts "User #{userId} :- registered on server"
-        # {:registerConfirmation}
         {:noreply, state}
     end
     def handle_cast({:tweet,tweetString,userId}, state) do
@@ -84,7 +82,6 @@ defmodule TwitterClone.Server do
         Enum.each followersList, fn follower ->
 	        if query_to_storage(follower) != nil, do: send(query_to_storage(follower),{:live,tweetString})
         end
-        # IO.puts "User #{userId} :-#{tweetString} "
         {:noreply, state}
     end
 
@@ -92,7 +89,6 @@ defmodule TwitterClone.Server do
         subscribedTo = get_subscribed_to(userId)
         list = generate_tweet_list(subscribedTo,[])
         send(query_to_storage(userId),{:repTweetsSubscribedTo,list})
-        #  IO.puts "User #{userId} :-subscribed "
         {:noreply, state}
     end
     def  handle_cast({:tweetsWithHashtag, hashTag, userId}, state) do
@@ -125,10 +121,15 @@ defmodule TwitterClone.Server do
         :ets.insert(:clientsregistry, {userId, nil})
         {:noreply, state}
     end
+    def  handle_cast({:deleteUser, userId}, state) do
+        :ets.delete(:clientsregistry, userId)
+        {:noreply, state}
+    end
     def  handle_cast({:loginUser, userId,pid}, state) do
         :ets.insert(:clientsregistry, {userId, pid})
         {:noreply, state}
     end
+
     def  handle_cast({:addSubscriber,userId,subId}, state) do
         [tup] = :ets.lookup(:subscribedto, userId)
         list = elem(tup, 1)
@@ -137,9 +138,6 @@ defmodule TwitterClone.Server do
         add_followers(subId,userId)
         {:noreply, state}
     end
-    # def disconnect_user(userId) do
-    #     :ets.insert(:clientsregistry, {userId, nil})
-    # end
 
     def get_tweets(userId) do
         if :ets.lookup(:tweets, userId) == [] do
@@ -149,12 +147,6 @@ defmodule TwitterClone.Server do
             elem(tup, 1)
         end
     end
-
-    # def get_my_tweets(userId) do
-    #     [tup] = :ets.lookup(:tweets, userId)
-    #     list = elem(tup, 1)
-    #     send(query_to_storage(userId),{:repGetMyTweets,list})
-    # end
 
     def get_subscribed_to(userId) do
         [tup] = :ets.lookup(:subscribedto, userId)
@@ -166,12 +158,6 @@ defmodule TwitterClone.Server do
         elem(tup, 1)
     end
 
-    # def add_subscribed_to(userId,sub) do
-    #     [tup] = :ets.lookup(:subscribedto, userId)
-    #     list = elem(tup, 1)
-    #     list = [sub | list]
-    #     :ets.insert(:subscribedto, {userId, list})
-    # end
 
     def add_followers(userId,foll) do
         if :ets.lookup(:followers, userId) == [], do: :ets.insert(:followers, {userId, []})
