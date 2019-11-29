@@ -15,6 +15,17 @@
   of subscribers, increase the number of tweets. Make some of these messages’
   re-tweets.
 
+# Test cases implemented
+Test Cases are executed for the following functionalities:
+1. User registration
+2. User Disconnection
+3. User Deletion
+4. User Login
+5. User Subscription
+6. User tweet
+7. Get My tweet
+8. Hashtags
+9. User tweet mentions
 
 # How to Run
 Start a name server as a daemon:<br/>
