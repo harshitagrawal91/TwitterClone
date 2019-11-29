@@ -118,7 +118,6 @@ defmodule TwitterClone.Client do
     start_time = System.system_time(:millisecond)
     handle_queries_subscribed_to(usr)
     time_diff_queries_subscribed_to = System.system_time(:millisecond) - start
-
     time_diff_queries_subscribed_to
   end
 
@@ -216,8 +215,10 @@ defmodule TwitterClone.Client do
     |> handle_live_view
   end
 
+
   def handle_get_my_tweets(usr) do
     GenServer.cast(:global.whereis_name(:TwitterServer), {:getMyTweets, usr})
+
     receive do
       {:repGetMyTweets, list}
       ->
