@@ -25,9 +25,8 @@ Run the project:
   mix run proj4.exs
   
 (Run Client) <br/>
-  mix run proj4.exs num_user num_msg num_of_disconnection
-  
-  num_of_disconnection should be less that num_user 
+  mix run proj4.exs num_user num_msg num_of_disconnection 
+  num_of_disconnection should be less than num_user 
   
   mix run proj4.exs 10 20 5
   
