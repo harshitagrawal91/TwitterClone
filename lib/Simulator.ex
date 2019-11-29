@@ -1,4 +1,4 @@
-defmodule TwitterClone.Main do
+defmodule Simulator do
   def main(args) do
     params = parse_args(args)
     if(params == "start_server") do
@@ -15,7 +15,7 @@ defmodule TwitterClone.Main do
   end
 
   def start_server([]) do
-    TwitterClone.Server.start_link()
+    TwitterEngine.start_link()
     receive do: (_ -> :ok)
   end
 
@@ -85,20 +85,20 @@ defmodule TwitterClone.Main do
     receive do
       {
         :performance_metric,
-        _avg_time_to_tweet,
-        _query_tweet_subs_to,
-        _query_tweets_by_hashtag,
-        _query_tweets_by_mention,
-        _query_all_relevant_tweets
+        arg_avg_time_to_tweet,
+        arg_query_tweet_subs_to,
+        arg_query_tweets_by_hashtag,
+        arg_query_tweets_by_mention,
+        arg_query_all_relevant_tweets
       } ->
         converging(
           users_val - 1,
           users_count,
-          avg_time_to_tweet + _avg_time_to_tweet,
-          query_tweet_subs_to + _query_tweet_subs_to,
-          query_tweets_by_hashtag + _query_tweets_by_hashtag,
-          query_tweets_by_mention + _query_tweets_by_mention,
-          query_all_relevant_tweets + _query_all_relevant_tweets
+          avg_time_to_tweet + arg_avg_time_to_tweet,
+          query_tweet_subs_to + arg_query_tweet_subs_to,
+          query_tweets_by_hashtag + arg_query_tweets_by_hashtag,
+          query_tweets_by_mention + arg_query_tweets_by_mention,
+          query_all_relevant_tweets + arg_query_all_relevant_tweets
         )
     end
   end
@@ -109,7 +109,7 @@ defmodule TwitterClone.Main do
     subscrptn_number = ((subscrbr_count / (user_count - count + 1))
                         |> Float.floor
                         |> round) - 1
-    pid = spawn(fn -> TwitterClone.Client.start_link(userName, tweets, subscrptn_number, false) end)
+    pid = spawn(fn -> Client.start_link(userName, tweets, subscrptn_number, false) end)
     :ets.insert(:start_up_reg, {userName, pid})
     if (count != user_count) do
       register_users(
@@ -135,7 +135,7 @@ defmodule TwitterClone.Main do
     Enum.each discnneted_lst,
               fn userName ->
                 pid = spawn(
-                  fn -> TwitterClone.Client.start_link(userName, -1, -1, true)
+                  fn -> Client.start_link(userName, -1, -1, true)
                   end
                 )
                 :ets.insert(:start_up_reg, {userName, pid})

@@ -1,4 +1,4 @@
-defmodule TwitterClone.Client do
+defmodule Client do
   use GenServer
   require Logger
 
@@ -110,7 +110,7 @@ defmodule TwitterClone.Client do
   end
 
   def sendQuery(usr, start) do
-    start_time = System.system_time(:millisecond)
+
     handle_queries_subscribed_to(usr)
     qury_sbs_tm_df = System.system_time(:millisecond) - start
     qury_sbs_tm_df
@@ -118,7 +118,7 @@ defmodule TwitterClone.Client do
 
   def process_task(usr, start_time, twt_tm_dff, twt_cnt,
         qury_sbs_tm_df) do
-    handle_queries_hashtag("#COP5615isgreat", usr)
+    handle_queries_hashtag("#COP5615 is one of the best subject", usr)
     hs_tg_tm_dff_qry = System.system_time(:millisecond) - start_time
 
     start_time = System.system_time(:millisecond)

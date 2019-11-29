@@ -1,4 +1,4 @@
-defmodule TwitterClone.Server do
+defmodule TwitterEngine do
     use GenServer
     require Logger
 
@@ -166,7 +166,7 @@ defmodule TwitterClone.Server do
         list = elem(tup, 1)
         list = [foll | list]
         :ets.insert(:followers, {userId, list})
-        [tup] = :ets.lookup(:followers, userId)
+        [_tup] = :ets.lookup(:followers, userId)
         # IO.inspect(tup)
     end
 

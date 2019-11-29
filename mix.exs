@@ -14,7 +14,7 @@ defmodule Project4.Mixfile do
 
   def escript do
     [
-      main_module: TwitterClone.Main,
+      main_module: Simulator,
       emu_args: [ "+P 100000000" ]
     ]
   end
