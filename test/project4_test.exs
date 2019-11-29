@@ -13,6 +13,7 @@ defmodule Project4Test do
   test "Register User" do
     user_id=5
     user_id2=7
+    IO.puts("Testing User registaration")
     {noreply,state} =  TwitterClone.Server.handle_cast({:register_account, user_id, self()},10)
     {noreply,state} =  TwitterClone.Server.handle_cast({:register_account, user_id2, self()},10)
     [tup] = :ets.lookup(:clientsregistry, user_id)
@@ -21,6 +22,7 @@ defmodule Project4Test do
     assert(user_id2 == elem(tup, 0))
   end
   test "Disconnect User" do
+    IO.puts("Testing User Disconnection")
     user_id=10
     {noreply,state} =  TwitterClone.Server.handle_cast({:register_account, user_id, self()},10)
     {noreply,state} =  TwitterClone.Server.handle_cast({:disconnectUser, user_id},10)
@@ -28,6 +30,7 @@ defmodule Project4Test do
             assert(nil == elem(tup, 1))
   end
   test "Delete User" do
+    IO.puts("Testing User Deletion")
     user_id=11
     {noreply,state} =  TwitterClone.Server.handle_cast({:register_account, user_id, self()},10)
     {noreply,state} =  TwitterClone.Server.handle_cast({:deleteUser, user_id},10)
@@ -35,6 +38,7 @@ defmodule Project4Test do
 
   end
   test "Login User" do
+    IO.puts("Testing User Login")
     user_id=12
     {noreply,state} =  TwitterClone.Server.handle_cast({:register_account, user_id, self()},10)
     {noreply,state} =  TwitterClone.Server.handle_cast({:loginUser, user_id,self()},10)
@@ -43,6 +47,7 @@ defmodule Project4Test do
 
   end
   test "addSubscriber User" do
+    IO.puts("Testing User Subscription")
     user_id=15
     user_id2=17
     {noreply,state} =  TwitterClone.Server.handle_cast({:register_account, user_id, self()},10)
@@ -52,9 +57,24 @@ defmodule Project4Test do
     [tup] = :ets.lookup(:subscribedto, user_id)
     assert(["17"] == elem(tup, 1))
     [tup] = :ets.lookup(:followers,  Integer.to_string(user_id2))
-    IO.inspect(elem(tup, 1))
+    # IO.inspect(elem(tup, 1))
     assert([15] == elem(tup, 1))
   end
+  test "tweet" do
+    user_id=18
+    user_id2=19
+    {noreply,state} =  TwitterClone.Server.handle_cast({:register_account, user_id, self()},10)
+    {noreply,state} =  TwitterClone.Server.handle_cast({:register_account, user_id2, self()},10)
 
-  
+     TwitterClone.Server.handle_cast({:addSubscriber, user_id, Integer.to_string(user_id2)},10)
+    IO.puts("Testing User Tweet")
+    TwitterClone.Server.handle_cast({:tweet, "Client#{user_id} tweets that #check is absurd", user_id},10)
+    [tup] = :ets.lookup(:tweets, user_id)
+    IO.puts("Testing get my tweet")
+    assert(["Client18 tweets that #check is absurd"] == elem(tup, 1))
+    IO.puts("Testing hashtags")
+    [tup] = :ets.lookup(:hashtags_mentions, "#check")
+    assert(["Client18 tweets that #check is absurd"] == elem(tup, 1))
+  end
+
 end

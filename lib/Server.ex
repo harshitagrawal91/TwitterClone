@@ -132,6 +132,7 @@ defmodule TwitterClone.Server do
 
     def  handle_cast({:addSubscriber,userId,subId}, state) do
         [tup] = :ets.lookup(:subscribedto, userId)
+        # IO.inspect(elem(tup, 1))
         list = elem(tup, 1)
         list = [subId | list]
         :ets.insert(:subscribedto, {userId, list})
@@ -165,6 +166,8 @@ defmodule TwitterClone.Server do
         list = elem(tup, 1)
         list = [foll | list]
         :ets.insert(:followers, {userId, list})
+        [tup] = :ets.lookup(:followers, userId)
+        # IO.inspect(tup)
     end
 
 
@@ -181,6 +184,7 @@ defmodule TwitterClone.Server do
             list = [tweetString | list]
             :ets.insert(:hashtags_mentions,{tag,list})
         end
+        # IO.inspect(:ets.lookup(:hashtags_mentions, tag))
     end
 
 
