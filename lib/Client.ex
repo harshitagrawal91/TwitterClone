@@ -44,7 +44,7 @@ defmodule TwitterClone.Client do
     end
 
     GenServer.cast(:global.whereis_name(:TwitterServer), {:register_account, usr, self()})
-    IO.puts "Client #{usr} exists in current DB"
+    IO.puts "Registration of Client #{usr} completed"
     process_req(usr, cnt, nums_subs)
     receive do: (_ -> :ok)
   end
@@ -219,7 +219,7 @@ defmodule TwitterClone.Client do
     |> GenServer.cast({:tweetsSubscribedTo, usr})
     receive do
       {:repTweetsSubscribedTo, list} ->
-        if list != [], do: IO.inspect list, label: "Client #{usr} :- Subscribed To"
+        if list != [], do: IO.inspect list, label: "Client #{usr} :- Subscribed To \n"
 
     end
   end

@@ -77,4 +77,20 @@ defmodule Project4Test do
     assert(["Client18 tweets that #check is absurd"] == elem(tup, 1))
   end
 
+  test "tweet with mentions" do
+    user_id=20
+    user_id2=21
+    IO.puts("Testing User Tweet mentions")
+    {noreply,state} =  TwitterClone.Server.handle_cast({:register_account, user_id, self()},10)
+    {noreply,state} =  TwitterClone.Server.handle_cast({:register_account, user_id2, self()},10)
+
+     TwitterClone.Server.handle_cast({:addSubscriber, user_id, Integer.to_string(user_id2)},10)
+
+    TwitterClone.Server.handle_cast({:tweet, "Client#{user_id} tweets that @#{user_id2} is doing homework", user_id},10)
+
+    [tup]=:ets.lookup(:hashtags_mentions, "@21")
+    assert(["Client20 tweets that @21 is doing homework"] == elem(tup, 1))
+
+  end
+
 end
