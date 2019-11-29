@@ -26,12 +26,12 @@ defmodule TwitterClone.Client do
       rescue
         _ -> if l > 1, do:
           create_network(last, l - 1),
-                       else: IO.puts "Attempt to make current node distributed is unsuccessful."
+                       else:
+                         IO.puts "Attempt to make current node distributed is unsuccessful."
       end
     end
   end
 
-  # def init([userId, noOfTweets, noToSubscribe, existingUser]) do
   def init([usr, cnt, nums_subs, cur_usr]) do
 
     {:ok, iflist} = :inet.getif()
@@ -60,7 +60,7 @@ defmodule TwitterClone.Client do
     handle_live_view(usr)
   end
 
-  def process_req(usr, tweets_count, no_to_subscribe) do
+  def process_req(usr, twt_num, no_to_subscribe) do
     # Subscribe
     if no_to_subscribe > 0 do
       subList = generate_subList(1, no_to_subscribe, [])
@@ -85,7 +85,7 @@ defmodule TwitterClone.Client do
        )
 
     #Send Tweets
-    for _ <- 1..tweets_count do
+    for _ <- 1..twt_num do
       :global.whereis_name(:TwitterServer)
       |> GenServer.cast(
            {:tweet, "Client#{usr} tweets that #{randomizer(8)} is absurd", usr}
@@ -101,8 +101,13 @@ defmodule TwitterClone.Client do
 
     start_time = System.system_time(:millisecond)
 
-    process_task(usr, start_time, time_diff_tweet, tweets_count,
-      time_diff_queries_subscribed_to)
+    process_task(
+      usr,
+      start_time,
+      time_diff_tweet,
+      twt_num,
+      time_diff_queries_subscribed_to
+    )
 
     #Live View
     usr
@@ -117,8 +122,13 @@ defmodule TwitterClone.Client do
     time_diff_queries_subscribed_to
   end
 
-  def process_task(usr, start_time, time_diff_tweet, tweets_count,
-        time_diff_queries_subscribed_to) do
+  def process_task(
+        usr,
+        start_time,
+        time_diff_tweet,
+        twt_num,
+        time_diff_queries_subscribed_to
+      ) do
     handle_queries_hashtag("#COP5615isgreat", usr)
     time_diff_queries_hash_tag = System.system_time(:millisecond) - start_time
 
@@ -132,7 +142,7 @@ defmodule TwitterClone.Client do
       usr,
       start_time,
       time_diff_tweet,
-      tweets_count,
+      twt_num,
       time_diff_queries_subscribed_to,
       time_diff_queries_hash_tag,
       time_diff_queries_mention
@@ -144,7 +154,7 @@ defmodule TwitterClone.Client do
         usr,
         start_time,
         time_diff_tweet,
-        tweets_count,
+        twt_num,
         time_diff_queries_subscribed_to,
         time_diff_queries_hash_tag,
         time_diff_queries_mention
@@ -154,7 +164,7 @@ defmodule TwitterClone.Client do
     |> handle_get_my_tweets
     time_diff_queries_my_tweets = System.system_time(:millisecond) - start_time
 
-    time_diff_tweet = time_diff_tweet / (tweets_count + 3)
+    time_diff_tweet = time_diff_tweet / (twt_num + 3)
     send(
       :global.whereis_name(:start_up_process),
       {
@@ -199,7 +209,8 @@ defmodule TwitterClone.Client do
   def handle_live_view(usr) do
     receive do
       {:live, tweet_string} ->
-        IO.inspect tweet_string, label: "Client #{usr} :- Streaming --------"
+        IO.inspect tweet_string,
+                   label: "Client #{usr} :- Streaming --------"
     end
     usr
     |> handle_live_view
@@ -208,8 +219,10 @@ defmodule TwitterClone.Client do
   def handle_get_my_tweets(usr) do
     GenServer.cast(:global.whereis_name(:TwitterServer), {:getMyTweets, usr})
     receive do
-      {:repGetMyTweets, list} ->
-        IO.inspect list, label: "Client #{usr} :- All of my tweets"
+      {:repGetMyTweets, list}
+      ->
+        IO.inspect list,
+                   label: "Client #{usr} :- All of my tweets"
     end
   end
 
@@ -218,7 +231,9 @@ defmodule TwitterClone.Client do
     |> GenServer.cast({:tweetsSubscribedTo, usr})
     receive do
       {:repTweetsSubscribedTo, list} ->
-        if list != [], do: IO.inspect list, label: "Client #{usr} :- Subscribed To"
+        if list != [],
+           do: IO.inspect list,
+                          label: "Client #{usr} :- Subscribed To"
     end
   end
 
@@ -226,7 +241,8 @@ defmodule TwitterClone.Client do
     :global.whereis_name(:TwitterServer)
     |> GenServer.cast({:tweetsWithHashtag, tag, usr})
     receive do
-      {:repTweetsWithHashtag, list} -> IO.inspect list, label: "Client #{usr} :- Tweets With #{tag}"
+      {:repTweetsWithHashtag, list} ->
+        IO.inspect list, label: "Client #{usr} :- Tweets With #{tag}"
     end
   end
 
