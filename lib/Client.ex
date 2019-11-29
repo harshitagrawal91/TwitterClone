@@ -44,7 +44,7 @@ defmodule TwitterClone.Client do
     end
 
     GenServer.cast(:global.whereis_name(:TwitterServer), {:register_account, user_id, self()})
-    IO.puts "Client #{user_id} exists in current DB"
+    IO.puts "Registration of Client #{user_id} completed"
     client_handler(user_id, tweets_count, no_to_subscribe)
     receive do: (_ -> :ok)
   end
@@ -101,7 +101,7 @@ defmodule TwitterClone.Client do
     time_diff_queries_subscribed_to = System.system_time(:millisecond) - start_time
 
     start_time = System.system_time(:millisecond)
-    handle_queries_hashtag("#COP5615isgreat", user_id)
+    handle_queries_hashtag("#COP5615 is one of the best subject", user_id)
     time_diff_queries_hash_tag = System.system_time(:millisecond) - start_time
 
     start_time = System.system_time(:millisecond)
@@ -170,7 +170,6 @@ defmodule TwitterClone.Client do
 
   def handle_get_my_tweets(user_id) do
     GenServer.cast(:global.whereis_name(:TwitterServer), {:getMyTweets, user_id})
-    # send(:global.whereis_name(:TwitterServer),{:getMyTweets,userId})
     receive do
       {:repGetMyTweets, list} ->
         IO.inspect list, label: "Client #{user_id} :- All of my tweets"
@@ -182,7 +181,7 @@ defmodule TwitterClone.Client do
     |> GenServer.cast({:tweetsSubscribedTo, user_id})
     receive do
       {:repTweetsSubscribedTo, list} ->
-        if list != [], do: IO.inspect list, label: "Client #{user_id} :- Subscribed To"
+        if list != [], do: IO.inspect list, label: "Client #{user_id} :- Subscribed To \n"
     end
   end
 
