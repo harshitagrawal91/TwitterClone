@@ -2,8 +2,8 @@ defmodule TwitterClone.Client do
   use GenServer
   require Logger
 
-  def start_link(user_id, tweets_count, no_to_subscribe, existing_User) do
-    GenServer.start_link(__MODULE__, [user_id, tweets_count, no_to_subscribe, existing_User])
+  def start_link(user_id, twt_cnt, no_to_subscribe, existing_User) do
+    GenServer.start_link(__MODULE__, [user_id, twt_cnt, no_to_subscribe, existing_User])
   end
 
   def create_network([start | last], l) do
@@ -60,7 +60,7 @@ defmodule TwitterClone.Client do
     handle_live_view(usr)
   end
 
-  def process_req(usr, tweets_count, no_to_subscribe) do
+  def process_req(usr, twt_cnt, no_to_subscribe) do
     # Subscribe
     if no_to_subscribe > 0 do
       subList = generate_subList(1, no_to_subscribe, [])
@@ -85,7 +85,7 @@ defmodule TwitterClone.Client do
        )
 
     #Send Tweets
-    for _ <- 1..tweets_count do
+    for _ <- 1..twt_cnt do
       :global.whereis_name(:TwitterServer)
       |> GenServer.cast(
            {:tweet, "Client#{usr} tweets that #{randomizer(8)} is absurd", usr}
@@ -95,14 +95,14 @@ defmodule TwitterClone.Client do
     start_time = System.system_time(:millisecond)
     #ReTweet
 
-    time_diff_tweet = reTweet(usr, start_time)
+    twt_tm_dff = reTweet(usr, start_time)
     #Queries
-    time_diff_queries_subscribed_to = sendQuery(usr, start_time)
+    qury_sbs_tm_df = sendQuery(usr, start_time)
 
     start_time = System.system_time(:millisecond)
 
-    process_task(usr, start_time, time_diff_tweet, tweets_count,
-      time_diff_queries_subscribed_to)
+    process_task(usr, start_time, twt_tm_dff, twt_cnt,
+      qury_sbs_tm_df)
 
     #Live View
     usr
@@ -112,29 +112,29 @@ defmodule TwitterClone.Client do
   def sendQuery(usr, start) do
     start_time = System.system_time(:millisecond)
     handle_queries_subscribed_to(usr)
-    time_diff_queries_subscribed_to = System.system_time(:millisecond) - start
-    time_diff_queries_subscribed_to
+    qury_sbs_tm_df = System.system_time(:millisecond) - start
+    qury_sbs_tm_df
   end
 
-  def process_task(usr, start_time, time_diff_tweet, tweets_count,
-        time_diff_queries_subscribed_to) do
+  def process_task(usr, start_time, twt_tm_dff, twt_cnt,
+        qury_sbs_tm_df) do
     handle_queries_hashtag("#COP5615isgreat", usr)
-    time_diff_queries_hash_tag = System.system_time(:millisecond) - start_time
+    hs_tg_tm_dff_qry = System.system_time(:millisecond) - start_time
 
     start_time = System.system_time(:millisecond)
     handle_queries_mention(usr)
-    time_diff_queries_mention = System.system_time(:millisecond) - start_time
+    qury_mntn_tm_df = System.system_time(:millisecond) - start_time
 
     start_time = System.system_time(:millisecond)
 
     getAllTweets(
       usr,
       start_time,
-      time_diff_tweet,
-      tweets_count,
-      time_diff_queries_subscribed_to,
-      time_diff_queries_hash_tag,
-      time_diff_queries_mention
+      twt_tm_dff,
+      twt_cnt,
+      qury_sbs_tm_df,
+      hs_tg_tm_dff_qry,
+      qury_mntn_tm_df
     )
 
   end
@@ -142,27 +142,27 @@ defmodule TwitterClone.Client do
   def getAllTweets(
         usr,
         start_time,
-        time_diff_tweet,
-        tweets_count,
-        time_diff_queries_subscribed_to,
-        time_diff_queries_hash_tag,
-        time_diff_queries_mention
+        twt_tm_dff,
+        twt_cnt,
+        qury_sbs_tm_df,
+        hs_tg_tm_dff_qry,
+        qury_mntn_tm_df
       ) do
     #Get All Tweets
     usr
     |> handle_get_my_tweets
-    time_diff_queries_my_tweets = System.system_time(:millisecond) - start_time
+    qury_twt_tm_dff_self = System.system_time(:millisecond) - start_time
 
-    time_diff_tweet = time_diff_tweet / (tweets_count + 3)
+    twt_tm_dff = twt_tm_dff / (twt_cnt + 3)
     send(
       :global.whereis_name(:start_up_process),
       {
         :performance_metric,
-        time_diff_tweet,
-        time_diff_queries_subscribed_to,
-        time_diff_queries_hash_tag,
-        time_diff_queries_mention,
-        time_diff_queries_my_tweets
+        twt_tm_dff,
+        qury_sbs_tm_df,
+        hs_tg_tm_dff_qry,
+        qury_mntn_tm_df,
+        qury_twt_tm_dff_self
       }
     )
   end
@@ -170,8 +170,8 @@ defmodule TwitterClone.Client do
   def reTweet(usr, start) do
     usr
     |> handle_re_tweet
-    time_diff_tweet = System.system_time(:millisecond) - start
-    time_diff_tweet
+    twt_tm_dff = System.system_time(:millisecond) - start
+    twt_tm_dff
   end
 
   def generate_subList(count, no_of_Subs, list) do
