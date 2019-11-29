@@ -6,68 +6,70 @@ defmodule TwitterClone.Client do
     GenServer.start_link(__MODULE__, [user_id, tweets_count, no_to_subscribe, existing_User])
   end
 
-  def make_distributed([head | tail], l) do
+  def create_network([start | last], l) do
     unless Node.alive?() do
       try do
-        {ip_tuple, _, _} = head
-        current_ip = to_string(:inet_parse.ntoa(ip_tuple))
-        if current_ip === "127.0.0.1" do
+        {row, _, _} = start
+        addr = to_string(:inet_parse.ntoa(row))
+        if addr === "127.0.0.1" do
           if l > 1 do
-            make_distributed(tail, l - 1)
+            create_network(last, l - 1)
           else
             IO.puts "Attempt to make current node distributed is unsuccessful."
           end
         else
-          server_node_name = String.to_atom("client@" <> current_ip)
+          server_node_name = String.to_atom("client@" <> addr)
           Node.start(server_node_name)
           Node.set_cookie(server_node_name, :monster)
-          Node.connect(String.to_atom("server@" <> current_ip))
+          Node.connect(String.to_atom("server@" <> addr))
         end
       rescue
         _ -> if l > 1, do:
-          make_distributed(tail, l - 1),
+          create_network(last, l - 1),
                        else: IO.puts "Attempt to make current node distributed is unsuccessful."
       end
     end
   end
 
   # def init([userId, noOfTweets, noToSubscribe, existingUser]) do
-  def init([user_id, tweets_count, no_to_subscribe, existing_User]) do
+  def init([usr, cnt, nums_subs, cur_usr]) do
 
     {:ok, iflist} = :inet.getif()
-    make_distributed(Enum.reverse(iflist), length(iflist))
+    create_network(Enum.reverse(iflist), length(iflist))
     :global.sync()
 
-    if existing_User do
-      IO.puts "Client #{user_id} connects again!!"
-      login_handler(user_id)
+    if cur_usr do
+      IO.puts "Client #{usr} connects again!!"
+      process_after_login(usr)
     end
 
-    GenServer.cast(:global.whereis_name(:TwitterServer), {:register_account, user_id, self()})
-    IO.puts "Client #{user_id} exists in current DB"
-    client_handler(user_id, tweets_count, no_to_subscribe)
+    GenServer.cast(:global.whereis_name(:TwitterServer), {:register_account, usr, self()})
+    IO.puts "Client #{usr} exists in current DB"
+    process_req(usr, cnt, nums_subs)
     receive do: (_ -> :ok)
   end
 
-  def login_handler(user_id) do
-    GenServer.cast(:global.whereis_name(:TwitterServer), {:loginUser, user_id, self()})
+  def process_after_login(usr) do
+    GenServer.cast(:global.whereis_name(:TwitterServer), {:loginUser, usr, self()})
     for _ <- 1..5 do
       GenServer.cast(
         :global.whereis_name(:TwitterServer),
-        {:tweet, "Client#{user_id} tweets that #{randomizer(8)} is absurd", user_id}
+        {:tweet, "Client#{usr} tweets that #{randomizer(8)} is absurd", usr}
       )
     end
-    handle_live_view(user_id)
+    handle_live_view(usr)
   end
 
-  def client_handler(user_id, tweets_count, no_to_subscribe) do
+  def process_req(user_id, tweets_count, no_to_subscribe) do
     # Subscribe
     if no_to_subscribe > 0 do
       subList = generate_subList(1, no_to_subscribe, [])
-      handle_zipf_subscribe(user_id, subList)
+      Enum.each subList, fn account_id ->
+        :global.whereis_name(:TwitterServer)
+        |> GenServer.cast({:addSubscriber, user_id, Integer.to_string(account_id)})
+      end
     end
 
-    start_time = System.system_time(:millisecond)
     user_to_mention = user_id
                       |> String.to_integer
                       |> :rand.uniform
@@ -90,17 +92,33 @@ defmodule TwitterClone.Client do
          )
     end
 
+    start_time = System.system_time(:millisecond)
     #ReTweet
-    user_id
-    |> handle_re_tweet
-    time_diff_tweet = System.system_time(:millisecond) - start_time
 
+    time_diff_tweet = reTweet(user_id, start_time)
     #Queries
-    start_time = System.system_time(:millisecond)
-    handle_queries_subscribed_to(user_id)
-    time_diff_queries_subscribed_to = System.system_time(:millisecond) - start_time
+    time_diff_queries_subscribed_to = sendQuery(user_id, start_time)
 
     start_time = System.system_time(:millisecond)
+
+    process_task(user_id, start_time, time_diff_tweet, tweets_count,
+      time_diff_queries_subscribed_to)
+
+    #Live View
+    user_id
+    |> handle_live_view
+  end
+
+  def sendQuery(usr, start) do
+    start_time = System.system_time(:millisecond)
+    handle_queries_subscribed_to(usr)
+    time_diff_queries_subscribed_to = System.system_time(:millisecond) - start
+
+    time_diff_queries_subscribed_to
+  end
+
+  def process_task(user_id, start_time, time_diff_tweet, tweets_count,
+        time_diff_queries_subscribed_to) do
     handle_queries_hashtag("#COP5615isgreat", user_id)
     time_diff_queries_hash_tag = System.system_time(:millisecond) - start_time
 
@@ -109,6 +127,28 @@ defmodule TwitterClone.Client do
     time_diff_queries_mention = System.system_time(:millisecond) - start_time
 
     start_time = System.system_time(:millisecond)
+
+    getAllTweets(
+      user_id,
+      start_time,
+      time_diff_tweet,
+      tweets_count,
+      time_diff_queries_subscribed_to,
+      time_diff_queries_hash_tag,
+      time_diff_queries_mention
+    )
+
+  end
+
+  def getAllTweets(
+        user_id,
+        start_time,
+        time_diff_tweet,
+        tweets_count,
+        time_diff_queries_subscribed_to,
+        time_diff_queries_hash_tag,
+        time_diff_queries_mention
+      ) do
     #Get All Tweets
     user_id
     |> handle_get_my_tweets
@@ -126,10 +166,13 @@ defmodule TwitterClone.Client do
         time_diff_queries_my_tweets
       }
     )
+  end
 
-    #Live View
-    user_id
-    |> handle_live_view
+  def reTweet(usr, start) do
+    usr
+    |> handle_re_tweet
+    time_diff_tweet = System.system_time(:millisecond) - start
+    time_diff_tweet
   end
 
   def generate_subList(count, no_of_Subs, list) do
@@ -140,12 +183,6 @@ defmodule TwitterClone.Client do
     end
   end
 
-  def handle_zipf_subscribe(user_id, subscribe_to_list) do
-    Enum.each subscribe_to_list, fn account_id ->
-      :global.whereis_name(:TwitterServer)
-      |> GenServer.cast({:addSubscriber, user_id, Integer.to_string(account_id)})
-    end
-  end
 
   def handle_re_tweet(user_id) do
     GenServer.cast(:global.whereis_name(:TwitterServer), {:tweetsSubscribedTo, user_id})
@@ -170,7 +207,6 @@ defmodule TwitterClone.Client do
 
   def handle_get_my_tweets(user_id) do
     GenServer.cast(:global.whereis_name(:TwitterServer), {:getMyTweets, user_id})
-    # send(:global.whereis_name(:TwitterServer),{:getMyTweets,userId})
     receive do
       {:repGetMyTweets, list} ->
         IO.inspect list, label: "Client #{user_id} :- All of my tweets"
