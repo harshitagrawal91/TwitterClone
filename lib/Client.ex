@@ -60,52 +60,52 @@ defmodule TwitterClone.Client do
     handle_live_view(usr)
   end
 
-  def process_req(user_id, tweets_count, no_to_subscribe) do
+  def process_req(usr, tweets_count, no_to_subscribe) do
     # Subscribe
     if no_to_subscribe > 0 do
       subList = generate_subList(1, no_to_subscribe, [])
       Enum.each subList, fn account_id ->
         :global.whereis_name(:TwitterServer)
-        |> GenServer.cast({:addSubscriber, user_id, Integer.to_string(account_id)})
+        |> GenServer.cast({:addSubscriber, usr, Integer.to_string(account_id)})
       end
     end
 
-    user_to_mention = user_id
+    user_to_mention = usr
                       |> String.to_integer
                       |> :rand.uniform
 
     :global.whereis_name(:TwitterServer)
     |> GenServer.cast(
-         {:tweet, "Client#{user_id} tweets about @#{user_to_mention}", user_id}
+         {:tweet, "Client#{usr} tweets about @#{user_to_mention}", usr}
        )
 
     :global.whereis_name(:TwitterServer)
     |> GenServer.cast(
-         {:tweet, "Client#{user_id} tweets that UF CISE awesome", user_id}
+         {:tweet, "Client#{usr} tweets that UF CISE awesome", usr}
        )
 
     #Send Tweets
     for _ <- 1..tweets_count do
       :global.whereis_name(:TwitterServer)
       |> GenServer.cast(
-           {:tweet, "Client#{user_id} tweets that #{randomizer(8)} is absurd", user_id}
+           {:tweet, "Client#{usr} tweets that #{randomizer(8)} is absurd", usr}
          )
     end
 
     start_time = System.system_time(:millisecond)
     #ReTweet
 
-    time_diff_tweet = reTweet(user_id, start_time)
+    time_diff_tweet = reTweet(usr, start_time)
     #Queries
-    time_diff_queries_subscribed_to = sendQuery(user_id, start_time)
+    time_diff_queries_subscribed_to = sendQuery(usr, start_time)
 
     start_time = System.system_time(:millisecond)
 
-    process_task(user_id, start_time, time_diff_tweet, tweets_count,
+    process_task(usr, start_time, time_diff_tweet, tweets_count,
       time_diff_queries_subscribed_to)
 
     #Live View
-    user_id
+    usr
     |> handle_live_view
   end
 
@@ -117,19 +117,19 @@ defmodule TwitterClone.Client do
     time_diff_queries_subscribed_to
   end
 
-  def process_task(user_id, start_time, time_diff_tweet, tweets_count,
+  def process_task(usr, start_time, time_diff_tweet, tweets_count,
         time_diff_queries_subscribed_to) do
-    handle_queries_hashtag("#COP5615isgreat", user_id)
+    handle_queries_hashtag("#COP5615isgreat", usr)
     time_diff_queries_hash_tag = System.system_time(:millisecond) - start_time
 
     start_time = System.system_time(:millisecond)
-    handle_queries_mention(user_id)
+    handle_queries_mention(usr)
     time_diff_queries_mention = System.system_time(:millisecond) - start_time
 
     start_time = System.system_time(:millisecond)
 
     getAllTweets(
-      user_id,
+      usr,
       start_time,
       time_diff_tweet,
       tweets_count,
@@ -141,7 +141,7 @@ defmodule TwitterClone.Client do
   end
 
   def getAllTweets(
-        user_id,
+        usr,
         start_time,
         time_diff_tweet,
         tweets_count,
@@ -150,7 +150,7 @@ defmodule TwitterClone.Client do
         time_diff_queries_mention
       ) do
     #Get All Tweets
-    user_id
+    usr
     |> handle_get_my_tweets
     time_diff_queries_my_tweets = System.system_time(:millisecond) - start_time
 
@@ -184,57 +184,57 @@ defmodule TwitterClone.Client do
   end
 
 
-  def handle_re_tweet(user_id) do
-    GenServer.cast(:global.whereis_name(:TwitterServer), {:tweetsSubscribedTo, user_id})
+  def handle_re_tweet(usr) do
+    GenServer.cast(:global.whereis_name(:TwitterServer), {:tweetsSubscribedTo, usr})
     list = receive do
       {:repTweetsSubscribedTo, list} -> list
     end
     if list != [] do
       rt = hd(list)
       :global.whereis_name(:TwitterServer)
-      |> GenServer.cast({:tweet, rt <> " -Right", user_id})
+      |> GenServer.cast({:tweet, rt <> " -Right", usr})
     end
   end
 
-  def handle_live_view(user_id) do
+  def handle_live_view(usr) do
     receive do
       {:live, tweet_string} ->
-        IO.inspect tweet_string, label: "Client #{user_id} :- Streaming --------"
+        IO.inspect tweet_string, label: "Client #{usr} :- Streaming --------"
     end
-    user_id
+    usr
     |> handle_live_view
   end
 
-  def handle_get_my_tweets(user_id) do
-    GenServer.cast(:global.whereis_name(:TwitterServer), {:getMyTweets, user_id})
+  def handle_get_my_tweets(usr) do
+    GenServer.cast(:global.whereis_name(:TwitterServer), {:getMyTweets, usr})
     receive do
       {:repGetMyTweets, list} ->
-        IO.inspect list, label: "Client #{user_id} :- All of my tweets"
+        IO.inspect list, label: "Client #{usr} :- All of my tweets"
     end
   end
 
-  def handle_queries_subscribed_to(user_id) do
+  def handle_queries_subscribed_to(usr) do
     :global.whereis_name(:TwitterServer)
-    |> GenServer.cast({:tweetsSubscribedTo, user_id})
+    |> GenServer.cast({:tweetsSubscribedTo, usr})
     receive do
       {:repTweetsSubscribedTo, list} ->
-        if list != [], do: IO.inspect list, label: "Client #{user_id} :- Subscribed To"
+        if list != [], do: IO.inspect list, label: "Client #{usr} :- Subscribed To"
     end
   end
 
-  def handle_queries_hashtag(tag, user_id) do
+  def handle_queries_hashtag(tag, usr) do
     :global.whereis_name(:TwitterServer)
-    |> GenServer.cast({:tweetsWithHashtag, tag, user_id})
+    |> GenServer.cast({:tweetsWithHashtag, tag, usr})
     receive do
-      {:repTweetsWithHashtag, list} -> IO.inspect list, label: "Client #{user_id} :- Tweets With #{tag}"
+      {:repTweetsWithHashtag, list} -> IO.inspect list, label: "Client #{usr} :- Tweets With #{tag}"
     end
   end
 
-  def handle_queries_mention(user_id) do
+  def handle_queries_mention(usr) do
     :global.whereis_name(:TwitterServer)
-    |> GenServer.cast({:tweetsWithMention, user_id})
+    |> GenServer.cast({:tweetsWithMention, usr})
     receive do
-      {:repTweetsWithMention, list} -> IO.inspect list, label: "Client #{user_id} :- Tweets With @#{user_id}"
+      {:repTweetsWithMention, list} -> IO.inspect list, label: "Client #{usr} :- Tweets With @#{usr}"
     end
   end
 
